@@ -1,0 +1,32 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# One-click deploy to Render (recommended for this app):
+#
+#   1. Push this repo to GitHub.
+#   2. On render.com → New → Blueprint → pick the repo.
+#      Render reads this file and creates the service automatically.
+#   3. When prompted, paste your RapidAPI key into the RAPIDAPI_KEY env var.
+#   4. Deploy. The service gets a public HTTPS URL (required for PWA install
+#      + Web Share Target). Open it on Android Chrome → menu → "Install app".
+#
+# Render is preferred over Vercel here because this is a long-running Express
+# server that also streams MP4s (Vercel's serverless functions have body/time
+# limits that can bite on large video streams).
+# ──────────────────────────────────────────────────────────────────────────────
+services:
+  - type: web
+    name: tikgrab-pwa
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: RAPIDAPI_HOST
+        value: tiktok-downloader-download-tiktok-videos-without-watermark.p.rapidapi.com
+      - key: RAPIDAPI_KEY
+        sync: false # Render asks you for the value at deploy time — keeps it out of git
+      - key: UPSTREAM_TIMEOUT_MS
+        value: "45000"

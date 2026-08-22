@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <title>TikGrab — Save TikTok videos watermark-free</title>
+  <meta name="description" content="Share a TikTok link to TikGrab or paste it here — download the video as a clean MP4 in seconds." />
+  <meta name="theme-color" content="#0b0b10" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+
+  <!-- iOS niceties (iOS ignores the web manifest for some fields) -->
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="TikGrab" />
+
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- Decorative gradient glows (TikTok cyan + pink) -->
+  <div class="glow glow-cyan" aria-hidden="true"></div>
+  <div class="glow glow-pink" aria-hidden="true"></div>
+
+  <main class="shell">
+
+    <!-- ══════════ Header ══════════ -->
+    <header class="header">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
+          <path d="M12 3v10.55A3.75 3.75 0 1 0 14 17V7.5c1.1 1.4 2.8 2.5 5 2.7V7.3c-1.9-.2-3.4-1.6-3.9-3.3H12z"
+                fill="currentColor"/>
+          <path d="M8.5 12.2v2.1c-1.9.1-3.5 1.6-3.5 3.55S6.6 21.4 8.55 21.4s3.55-1.55 3.55-3.5"
+                stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".55"/>
+        </svg>
+        <svg viewBox="0 0 24 24" width="15" height="15" class="arrow" fill="none">
+          <path d="M12 4v12m0 0-4.5-4.5M12 16l4.5-4.5M5 20h14" stroke="currentColor"
+                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1>Tik<span>Grab</span></h1>
+      <p class="tagline">Share a TikTok here — or paste its link — and save the video <b>watermark-free</b>.</p>
+    </header>
+
+    <!-- ══════════ Input card ══════════ -->
+    <section class="card" id="input-card">
+      <div class="field-row">
+        <svg class="field-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+          <path d="M10.5 13.5a4 4 0 0 0 5.7.3l3-3a4 4 0 1 0-5.7-5.7l-1.2 1.2" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M13.5 10.5a4 4 0 0 0-5.7-.3l-3 3a4 4 0 1 0 5.7 5.7l1.2-1.2" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <input id="url-input" type="url" inputmode="url" autocomplete="off" spellcheck="false"
+               placeholder="Paste a TikTok link…" aria-label="TikTok video link" />
+        <button id="paste-btn" class="icon-btn" title="Paste from clipboard" aria-label="Paste from clipboard">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+          <rect x="6" y="4.5" width="12" height="16" rx="2.5" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M9.5 3.5h5v2.5h-5z" fill="currentColor"/>
+            <path d="M9.5 12h5M9.5 15.5h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <button id="download-btn" class="btn-primary">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" aria-hidden="true">
+          <path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" stroke="currentColor"
+                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Download video</span>
+      </button>
+    </section>
+
+    <!-- ══════════ Status card (spinner / progress / error) ══════════ -->
+    <section class="card hidden" id="status-card" aria-live="polite">
+      <!-- resolving -->
+      <div id="row-resolving" class="status-row hidden">
+        <div class="spinner" aria-hidden="true"></div>
+        <div>
+          <div class="status-title">Fetching video info…</div>
+          <div class="status-sub">Resolving the watermark-free MP4 link</div>
+        </div>
+      </div>
+
+      <!-- error -->
+      <div id="row-error" class="status-row hidden">
+        <svg viewBox="0 0 24 24" width="30" height="30" class="error-icon" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M12 7.5v5.5m0 3.2v.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <div class="status-title">Something went wrong</div>
+          <div class="status-sub" id="error-msg">Unknown error</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ Result card ══════════ -->
+    <section class="card hidden" id="result-card">
+      <div class="result-top">
+        <div class="thumb" id="result-thumb">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" stroke-width="1.6"/>
+            <path d="m10.5 9.5 4.5 2.5-4.5 2.5z" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="result-meta">
+          <div class="result-title" id="result-title">TikTok video</div>
+          <div class="result-chips">
+            <span class="chip hidden" id="chip-author"></span>
+            <span class="chip hidden" id="chip-duration"></span>
+            <span class="chip hidden" id="chip-size"></span>
+            <span class="chip chip-quality hidden" id="chip-quality"></span>
+          </div>
+        </div>
+      </div>
+
+      <a id="save-btn" class="btn-primary btn-save" download>
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" aria-hidden="true">
+          <path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" stroke="currentColor"
+                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Save Video (.MP4)</span>
+      </a>
+      <div class="save-hint" id="save-hint">Saves natively to your device as <b>tiktok_video.mp4</b> via TikGrab’s download proxy</div>
+      <a id="direct-link" class="direct-link hidden" target="_blank" rel="noopener">Open the direct CDN link instead</a>
+    </section>
+
+    <!-- ══════════ How it works ══════════ -->
+    <section class="card howto" id="howto-card">
+      <div class="step"><span class="step-n">1</span> Open a video in TikTok and tap <b>Share</b></div>
+      <div class="step"><span class="step-n">2</span> Choose <b>TikGrab</b> from the share menu <span class="muted">(or paste the link above)</span></div>
+      <div class="step"><span class="step-n">3</span> Tap <b>Save Video</b> — the MP4 lands in your Downloads</div>
+    </section>
+
+    <footer class="footer">
+      For personal use only — respect creators’ rights and TikTok’s Terms of Service.
+    </footer>
+  </main>
+
+  <!-- ══════════ Install banner (Android "Add to Home Screen") ══════════ -->
+  <div id="install-banner" class="install-banner hidden" role="dialog" aria-label="Install TikGrab">
+    <div class="install-text">
+      <b>Install TikGrab</b>
+      <span>Add it to your home screen to grab videos with one tap from the share menu.</span>
+    </div>
+    <div class="install-actions">
+      <button id="install-btn" class="btn-install">Install</button>
+      <button id="install-dismiss" class="btn-ghost" aria-label="Dismiss">✕</button>
+    </div>
+  </div>
+
+  <noscript>
+    <div class="noscript">TikGrab needs JavaScript enabled to work.</div>
+  </noscript>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <title>TikGrab — Cyber-Neon TikTok Downloader</title>
+  <meta name="description" content="Paste a TikTok link. Extract Video or MP3 entirely on your device. Cyber-neon minimalist PWA." />
+  <meta name="theme-color" content="#0A0A0A" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="TikGrab" />
+
+  <!-- Geometric type: Poppins (display) + Inter (UI) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Ambient neon field -->
+  <div class="glow glow-pink" aria-hidden="true"></div>
+  <div class="glow glow-cyan" aria-hidden="true"></div>
+
+  <main class="stage">
+    <!-- ══ Logo with TikTok split-glitch ══ -->
+    <header class="hero">
+      <h1 class="logo" data-text="TikGrab">TikGrab</h1>
+      <p class="tag">video &amp; mp3 extraction — entirely on your device</p>
+    </header>
+
+    <!-- ══ Unified pill: input + format + Get ══ -->
+    <section class="pill" id="pill">
+      <svg class="pill-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M10.5 13.5a4 4 0 0 0 5.7.3l3-3a4 4 0 1 0-5.7-5.7l-1.2 1.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M13.5 10.5a4 4 0 0 0-5.7-.3l-3 3a4 4 0 1 0 5.7 5.7l1.2-1.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+
+      <input id="url" type="url" inputmode="url" autocomplete="off" spellcheck="false"
+             placeholder="Paste your TikTok link…" aria-label="TikTok video link" />
+
+      <span class="divider" aria-hidden="true"></span>
+
+      <select id="format" aria-label="Output format">
+        <option value="video">Video</option>
+        <option value="mp3">MP3</option>
+      </select>
+
+      <button id="get" class="get-btn" type="button">
+        <span class="label">Get</span>
+        <span class="ring" aria-hidden="true"></span>
+      </button>
+    </section>
+
+    <p id="error" class="error" hidden></p>
+
+    <!-- ══ Frosted "Download Ready" card (slides down) ══ -->
+    <section id="ready" class="ready-card" aria-live="polite">
+      <div class="ready-head">
+        <div class="thumb" id="r-thumb">▶</div>
+        <div class="ready-meta">
+          <div class="ready-kicker">Download Ready</div>
+          <div class="r-title" id="r-title">TikTok video</div>
+          <div class="r-author" id="r-author"></div>
+          <div class="r-chips" id="r-chips"></div>
+        </div>
+      </div>
+      <div class="ready-actions">
+        <a id="dl-video" class="act act-video" download target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Video · No Watermark
+        </a>
+        <a id="dl-mp3" class="act act-mp3" download target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 18V6l10-2v11.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="currentColor"/><circle cx="16.5" cy="15.5" r="2.5" fill="currentColor"/></svg>
+          Audio · MP3
+        </a>
+      </div>
+      <a id="dl-alt" class="alt" hidden target="_blank" rel="noopener noreferrer">alternate CDN link</a>
+    </section>
+
+    <footer class="foot">personal use only — respect creators &amp; tiktok's terms</footer>
+  </main>
+
+  <!-- PWA registration (per spec: lives in index.html) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .catch((err) => console.warn('SW registration failed:', err));
+      });
+    }
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

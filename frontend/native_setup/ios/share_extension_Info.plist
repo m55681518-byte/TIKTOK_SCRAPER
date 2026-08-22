@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ═══════════════════════════════════════════════════════════════════════════
+  TikGrab — reference Info.plist for the iOS Share Extension target
+  ═══════════════════════════════════════════════════════════════════════════
+  Replace  ios/Share Extension/Info.plist  with this file.
+
+  Key points:
+    • AppGroupId            → must equal the App Group container shared with
+                              Runner, via the CUSTOM_GROUP_ID build setting.
+    • NSExtensionActivationRule → declares what TikTok is allowed to share to us:
+                              text and a single web URL (a TikTok link).
+    • NSExtensionPointIdentifier → registers this as a share-services
+                              extension (this is what makes TikGrab appear
+                              in the iOS share sheet at all).
+  ═══════════════════════════════════════════════════════════════════════════
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AppGroupId</key>
+	<string>$(CUSTOM_GROUP_ID)</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>TikGrab</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>XPC!</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionAttributes</key>
+		<dict>
+			<key>NSExtensionActivationRule</key>
+			<dict>
+				<!-- TikTok shares the video link as text and/or as a URL. -->
+				<key>NSExtensionActivationSupportsText</key>
+				<true/>
+				<key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
+				<integer>1</integer>
+			</dict>
+		</dict>
+		<!-- Xcode's Share Extension template ships MainInterface.storyboard;
+		     set its view controller's Custom Class to ShareViewController.
+		     (Alternatively delete this key and use NSExtensionPrincipalClass:
+		     <key>NSExtensionPrincipalClass</key>
+		     <string>$(PRODUCT_MODULE_NAME).ShareViewController</string> ) -->
+		<key>NSExtensionMainStoryboard</key>
+		<string>MainInterface</string>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.share-services</string>
+	</dict>
+</dict>
+</plist>

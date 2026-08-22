@@ -1,0 +1,26 @@
+{
+  "name": "tikgrab-3d",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "TikGrab — Awwwards-style 3D landing page (React Three Fiber + framer-motion + Tailwind)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.0.6",
+    "@react-three/fiber": "^9.1.2",
+    "framer-motion": "^12.6.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "three": "^0.175.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.4",
+    "@vitejs/plugin-react": "^4.4.1",
+    "tailwindcss": "^4.1.4",
+    "vite": "^6.3.1"
+  }
+}

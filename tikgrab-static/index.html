@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  ════════════════════════════════════════════════════════════════════════════
+  TikGrab — single-file, 100% client-side TikTok downloader
+  ════════════════════════════════════════════════════════════════════════════
+  • ZERO backend, ZERO proxies: the browser talks DIRECTLY and cleanly to
+    TikTok's own public servers. No serverless functions, no RapidAPI,
+    no database, no third-party CORS relays. Media streams flow
+    TikTok CDN → user device (0 bytes through any host of ours).
+
+  • Native resolution pipeline (all first-party TikTok endpoints):
+      1. https://www.tiktok.com/oembed?url=…
+         Public oEmbed → title / author / thumbnail, and the canonical
+         video id for short vm.tiktok.com / vt.tiktok.com links.
+      2. https://www.tiktok.com/embed/v2/<id>   (fallback: /embed/<id>)
+         The public native EMBED PLAYER page. Its SIGI_STATE / initial-props
+         JSON payload carries the direct CDN play addresses (clean stream),
+         the internal aweme `videoId`, cover art and the music MP3.
+      3. https://api.tiktok.com/aweme/v1/play/?video_id=<internal>&watermark=0
+         TikTok's native play endpoint with the watermark flag OFF — the
+         direct un-watermarked stream, used as the primary download link.
+
+  • Downloads: extracted CDN links are attached to a dynamic <a> with
+    `download`, `target="_blank"` and `rel="noopener noreferrer"` so the
+    user's native download manager takes over.
+
+  Deploy: pure static site (Vercel root = this folder). No env vars needed.
+
+  Legal: for personal backups of content you own or have permission to
+  save. Respect creators' rights and TikTok's Terms of Service.
+  ════════════════════════════════════════════════════════════════════════════
+-->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <title>TikGrab — TikTok Video & MP3 Downloader</title>
+  <meta name="description" content="Paste a TikTok link and save the video watermark-free or grab the audio as MP3. 100% in your browser, straight from TikTok." />
+  <meta name="theme-color" content="#0b0b14" />
+
+  <!-- Aggressive client caching: returning users load from local storage. -->
+  <meta http-equiv="Cache-Control" content="public, max-age=31536000" />
+  <meta http-equiv="Expires" content="Thu, 31 Dec 2037 23:59:59 GMT" />
+  <meta http-equiv="Pragma" content="public" />
+
+  <!-- Tailwind CDN for spacing/layout primitives (glassmorphism is custom CSS) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* ════════════════════ CUSTOM GLASSMORPHISM + AMBIENT MOTION ════════════════════ */
+    :root {
+      --pink: #fe2c55;
+      --cyan: #25f4ee;
+      --violet: #8b5cf6;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      color: #f4f4f8;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+      background:
+        radial-gradient(1100px 700px at 88% -12%, rgba(139, 92, 246, 0.20), transparent 60%),
+        radial-gradient(900px 620px at -10% 112%, rgba(37, 244, 238, 0.13), transparent 60%),
+        radial-gradient(760px 520px at 12% -6%, rgba(254, 44, 85, 0.14), transparent 55%),
+        linear-gradient(160deg, #0f172a 0%, #150f2e 46%, #0b0b14 100%);
+      background-attachment: fixed;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection { background: rgba(139, 92, 246, 0.45); }
+
+    /* ── Ambient floating blobs (pure CSS keyframes, GPU-cheap, non-blocking) ── */
+    .blob {
+      position: fixed;
+      z-index: 0;
+      border-radius: 9999px;
+      filter: blur(90px);
+      pointer-events: none;
+      will-change: transform, opacity;
+    }
+    .blob-1 {
+      width: 46vmax; height: 46vmax; top: -18vmax; left: -14vmax;
+      background: radial-gradient(circle at 35% 35%, rgba(139, 92, 246, 0.5), rgba(139, 92, 246, 0.06) 70%);
+      animation: drift-1 26s ease-in-out infinite alternate;
+    }
+    .blob-2 {
+      width: 38vmax; height: 38vmax; bottom: -16vmax; right: -12vmax;
+      background: radial-gradient(circle at 60% 40%, rgba(254, 44, 85, 0.42), rgba(254, 44, 85, 0.05) 70%);
+      animation: drift-2 31s ease-in-out infinite alternate;
+    }
+    .blob-3 {
+      width: 26vmax; height: 26vmax; top: 34%; left: -10vmax;
+      background: radial-gradient(circle at 50% 50%, rgba(37, 244, 238, 0.32), rgba(37, 244, 238, 0.04) 70%);
+      animation: drift-3 23s ease-in-out infinite alternate;
+    }
+    .blob-4 {
+      width: 20vmax; height: 20vmax; top: 12%; right: 6%;
+      background: radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.30), rgba(236, 72, 153, 0.04) 70%);
+      animation: drift-4 19s ease-in-out infinite alternate;
+    }
+    @keyframes drift-1 {
+      0%   { transform: translate(0, 0) scale(1);          opacity: .55; }
+      50%  { transform: translate(6vmax, 4vmax) scale(1.12); opacity: .8; }
+      100% { transform: translate(-3vmax, 7vmax) scale(.96); opacity: .6; }
+    }
+    @keyframes drift-2 {
+      0%   { transform: translate(0, 0) scale(1);           opacity: .5; }
+      50%  { transform: translate(-7vmax, -3vmax) scale(1.15); opacity: .75; }
+      100% { transform: translate(3vmax, -6vmax) scale(1);   opacity: .55; }
+    }
+    @keyframes drift-3 {
+      0%   { transform: translate(0, 0) scale(1);        opacity: .45; }
+      100% { transform: translate(9vmax, -6vmax) scale(1.2); opacity: .7; }
+    }
+    @keyframes drift-4 {
+      0%   { transform: translate(0, 0) scale(1);         opacity: .4; }
+      100% { transform: translate(-6vmax, 5vmax) scale(1.25); opacity: .7; }
+    }
+
+    /* ── Frosted glass surfaces ── */
+    .glass {
+      background: linear-gradient(150deg, rgba(255,255,255,.10), rgba(255,255,255,.04) 45%, rgba(255,255,255,.07));
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(16px) saturate(150%);
+      -webkit-backdrop-filter: blur(16px) saturate(150%);
+      box-shadow:
+        0 24px 60px -18px rgba(0, 0, 0, .7),
+        inset 0 1px 0 rgba(255,255,255,.16);
+    }
+    .glass-soft {
+      background: rgba(255,255,255,.055);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 14px 40px -16px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.12);
+    }
+
+    /* ── Neon input ── */
+    .neon-input {
+      background: rgba(4, 4, 12, 0.42);
+      border: 1px solid rgba(255,255,255,.12);
+      transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    .neon-input:focus-within {
+      border-color: rgba(139, 92, 246, .65);
+      box-shadow: 0 0 0 3px rgba(139,92,246,.18), 0 0 30px -4px rgba(139,92,246,.4);
+    }
+
+    /* ── Buttons: vibrant hover/press micro-interactions ── */
+    .btn {
+      position: relative;
+      display: inline-flex; align-items: center; justify-content: center; gap: .55rem;
+      border: none; cursor: pointer; border-radius: 999px;
+      font-weight: 800; letter-spacing: .01em; color: #fff;
+      transition: transform .12s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .btn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+    .btn:active { transform: translateY(1px) scale(.98); filter: brightness(.97); }
+    .btn:disabled { opacity: .5; pointer-events: none; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ff5c7d 0%, var(--pink) 45%, #a21caf 130%);
+      box-shadow: 0 10px 30px -8px rgba(254,44,85,.55), inset 0 1px 0 rgba(255,255,255,.35);
+    }
+    .btn-video {
+      background: linear-gradient(135deg, #ff5c7d 0%, var(--pink) 50%, #d91a43 100%);
+      box-shadow: 0 12px 34px -8px rgba(254,44,85,.6), inset 0 1px 0 rgba(255,255,255,.35);
+    }
+    .btn-audio {
+      background: linear-gradient(135deg, #8efcf8 0%, var(--cyan) 50%, #0ea5b7 100%);
+      color: #04282a;
+      box-shadow: 0 12px 34px -8px rgba(37,244,238,.5), inset 0 1px 0 rgba(255,255,255,.5);
+    }
+
+    /* ── Gradient headline ── */
+    .grad-text {
+      background: linear-gradient(92deg, #fff 15%, var(--cyan) 45%, var(--violet) 75%, var(--pink) 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      filter: drop-shadow(0 0 26px rgba(139,92,246,.35));
+    }
+
+    /* ── Entrance animation ── */
+    .rise { animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
+    .rise-1 { animation-delay: .05s; } .rise-2 { animation-delay: .16s; } .rise-3 { animation-delay: .28s; }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(26px) scale(.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Spinner ─ */
+    .spinner {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 3px solid rgba(139,92,246,.25); border-top-color: var(--violet);
+      animation: spin .8s linear infinite; flex: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; left: 50%; transform: translateX(-50%);
+      bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+      z-index: 60; animation: rise .3s ease both;
+    }
+
+    /* Thumbnail */
+    .thumb { width: 68px; height: 94px; border-radius: 14px; overflow: hidden; flex: none;
+             background: rgba(255,255,255,.08); display: grid; place-items: center; color: rgba(255,255,255,.4); }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  </style>
+</head>
+
+<body class="min-h-screen">
+  <!-- Ambient animated background shapes -->
+  <div class="blob blob-1" aria-hidden="true"></div>
+  <div class="blob blob-2" aria-hidden="true"></div>
+  <div class="blob blob-3" aria-hidden="true"></div>
+  <div class="blob blob-4" aria-hidden="true"></div>
+
+  <main class="relative z-10 mx-auto flex min-h-screen w-full max-w-2xl flex-col items-center px-4 pb-20 pt-12 sm:pt-16">
+
+    <!-- ══════════ Header glass card ══════════ -->
+    <header class="glass rise rise-1 w-full rounded-[28px] px-6 py-7 text-center sm:px-10">
+      <div class="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl text-2xl"
+           style="background: linear-gradient(135deg, #fe2c55, #8b5cf6 60%, #25f4ee);
+                  box-shadow: 0 10px 34px rgba(139,92,246,.45);">♪</div>
+      <h1 class="grad-text text-4xl font-black tracking-tight sm:text-5xl">TikGrab</h1>
+      <p class="mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/60">
+        Save TikTok videos <span class="font-semibold text-white">watermark-free</span> or grab the
+        <span class="font-semibold text-white">MP3</span> — your browser talks
+        <span class="font-semibold text-white">directly to TikTok</span>. No proxies, no servers.
+      </p>
+    </header>
+
+    <!-- ══════════ Input glass bar ══════════ -->
+    <section class="glass rise rise-2 mt-6 w-full rounded-[24px] p-4 sm:p-5">
+      <div class="flex flex-col gap-3 sm:flex-row">
+        <div class="neon-input flex flex-1 items-center gap-2 rounded-2xl px-4 py-1.5">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" class="shrink-0 text-white/40" aria-hidden="true">
+            <path d="M10.5 13.5a4 4 0 0 0 5.7.3l3-3a4 4 0 1 0-5.7-5.7l-1.2 1.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M13.5 10.5a4 4 0 0 0-5.7-.3l-3 3a4 4 0 1 0 5.7 5.7l1.2-1.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <input id="url-input" type="url" inputmode="url" autocomplete="off" spellcheck="false"
+                 placeholder="Paste your TikTok video link here..."
+                 aria-label="TikTok video link"
+                 class="w-full bg-transparent py-3 text-sm text-white outline-none placeholder:text-white/35" />
+          <button id="paste-btn" title="Paste from clipboard" aria-label="Paste from clipboard"
+                  class="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[#25f4ee] transition hover:bg-[#25f4ee]/10 active:scale-90">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden="true">
+              <rect x="6" y="4.5" width="12" height="16" rx="2.5" stroke="currentColor" stroke-width="1.7"/>
+              <path d="M9.5 3.5h5v2.5h-5z" fill="currentColor"/>
+              <path d="M9.5 12h5M9.5 15.5h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <button id="download-btn" class="btn btn-primary px-7 py-3.5 text-[15px]">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+            <path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Download
+        </button>
+      </div>
+
+      <!-- Status row (loading / error) -->
+      <div id="status-row" class="mt-4 hidden">
+        <div id="status-loading" class="glass-soft flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-white/75">
+          <div class="spinner"></div>
+          <span id="status-text">Contacting TikTok…</span>
+        </div>
+        <div id="status-error" class="hidden rounded-2xl border border-[#ff5a6a]/35 bg-[#ff5a6a]/10 px-4 py-3 text-[13px] leading-relaxed text-[#ffb3bb]"></div>
+      </div>
+    </section>
+
+    <!-- ══════════ Results glass card (injected on success) ══════════ -->
+    <section id="result-card" class="glass rise mt-6 hidden w-full rounded-[24px] p-5 sm:p-6">
+      <div class="flex gap-4">
+        <div class="thumb" id="result-thumb">▶</div>
+        <div class="min-w-0 flex-1">
+          <div id="result-title" class="line-clamp-3 text-sm font-semibold leading-snug text-white/90">TikTok video</div>
+          <div id="result-author" class="mt-1.5 text-xs font-medium text-white/50"></div>
+          <div class="mt-2.5 flex flex-wrap gap-1.5" id="result-chips"></div>
+        </div>
+      </div>
+
+      <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <a id="btn-video" class="btn btn-video px-5 py-3.5 text-sm no-underline" download target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" stroke-width="1.7"/>
+            <path d="m10.5 9.5 4.5 2.5-4.5 2.5z" fill="currentColor"/>
+          </svg>
+          Download Video (No Watermark)
+        </a>
+        <a id="btn-audio" class="btn btn-audio px-5 py-3.5 text-sm no-underline" download target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden="true">
+            <path d="M9 18V6l10-2v11.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="6.5" cy="18" r="2.5" fill="currentColor"/><circle cx="16.5" cy="15.5" r="2.5" fill="currentColor"/>
+          </svg>
+          Download Audio (MP3)
+        </a>
+      </div>
+
+      <a id="btn-alt" class="mt-3 hidden text-center text-[11px] text-white/45 hover:text-white/80"
+         target="_blank" rel="noopener noreferrer">Try an alternate TikTok CDN link</a>
+      <div class="mt-2 text-center text-[11px] text-white/40">
+        Fetched straight from TikTok's public embed endpoints — nothing passes through proxies or servers.
+      </div>
+    </section>
+
+    <footer class="mt-10 max-w-sm text-center text-[11px] leading-relaxed text-white/30">
+      For personal use only — respect creators' rights and TikTok's Terms of Service.
+    </footer>
+  </main>
+
+  <script>
+  (() => {
+    'use strict';
+
+    /* ════════════════════════════ DOM ════════════════════════════ */
+    const $ = (id) => document.getElementById(id);
+    const els = {
+      input: $('url-input'), paste: $('paste-btn'), btn: $('download-btn'),
+      statusRow: $('status-row'), loading: $('status-loading'), statusText: $('status-text'),
+      error: $('status-error'),
+      card: $('result-card'), thumb: $('result-thumb'), title: $('result-title'),
+      author: $('result-author'), chips: $('result-chips'),
+      btnVideo: $('btn-video'), btnAudio: $('btn-audio'), btnAlt: $('btn-alt'),
+    };
+
+    /* ═══════════════════ TikTok native endpoints (first-party only) ═══════════════════
+     * No CORS relays anywhere: every request below goes straight to tiktok.com. */
+    const OEMBED_URL = 'https://www.tiktok.com/oembed?url=';
+    const EMBED_PATHS = (id) => [
+      `https://www.tiktok.com/embed/v2/${id}`,
+      `https://www.tiktok.com/embed/${id}`,
+    ];
+    const NATIVE_PLAY = (internalId) =>
+      `https://api.tiktok.com/aweme/v1/play/?video_id=${encodeURIComponent(internalId)}` +
+      `&line=0&ratio=default&watermark=0&media_type=4&logo_name=tiktok`;
+
+    const TIMEOUT_MS = 15000;
+
+    function fetchWithTimeout(url, ms = TIMEOUT_MS) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      return fetch(url, {
+        signal: ctrl.signal,
+        // Clean, browser-native request to TikTok — credentials never sent.
+        credentials: 'omit',
+        referrerPolicy: 'no-referrer',
+        headers: { Accept: '*/*' },
+      }).finally(() => clearTimeout(t));
+    }
+
+    /* ═══════════════════════════ URL helpers ═══════════════════════════ */
+    const TIKTOK_RE = /https?:\/\/(?:www\.|m\.|vm\.|vt\.)?tiktok\.com\/[^\s"'<>()]+/i;
+    const TIKTOK_HOST_RE = /(^|\.)tiktok\.com$/i;
+
+    function extractTikTokUrl(text) {
+      if (!text) return null;
+      const trimmed = String(text).trim();
+      const match = trimmed.match(TIKTOK_RE);
+      const candidate = match ? match[0] : trimmed;
+      try {
+        const u = new URL(candidate);
+        if (!TIKTOK_HOST_RE.test(u.hostname)) return null;
+        if (!u.pathname || u.pathname === '/') return null;
+        u.protocol = 'https:'; u.search = ''; u.hash = '';
+        return u.toString();
+      } catch { return null; }
+    }
+
+    /** Numeric aweme id when the link is long-form (/video/… or /photo/…). */
+    function idFromPath(url) {
+      const m = url.match(/(?:video|photo)\/(\d{6,})/);
+      return m ? m[1] : null;
+    }
+
+    const unescapeJson = (s) => String(s)
+      .replace(/\\u002F/gi, '/').replace(/\\\//g, '/').replace(/\\u0026/gi, '&');
+
+    const safeName = (t) => {
+      let base = String(t || '').replace(/#\S+/g, ' ')
+        .replace(/[^\w\- ]+/g, ' ').trim().replace(/\s+/g, '_');
+      if (base.length > 48) base = base.slice(0, 48);
+      return base || 'tiktok_video';
+    };
+    const fmtDur = (sec) => (sec > 0 ? `${Math.floor(sec / 60)}:${String(sec % 60).padLeft(2, '0')}` : '');
+
+    /* ═════════════════════ Embed payload parsing ═════════════════════
+     * The native embed player ships its data as JSON islands in the HTML
+     * (SIGI_STATE / __INITIAL_PROPS__ / window['videoData']). We parse all
+     * known shapes, then sweep the raw HTML for CDN addresses as backup. */
+    function parseEmbedPayload(html, meta) {
+      const out = {
+        video: null, alts: [], audio: null, internalId: null,
+        cover: (meta && meta.thumbnail_url) || null,
+        title: (meta && meta.title) || '',
+        author: (meta && meta.author_name) || '',
+        duration: 0,
+      };
+      const add = (u) => {
+        if (!u || !/^https:\/\//i.test(u)) return;
+        u = unescapeJson(u);
+        if (!out.alts.includes(u)) out.alts.push(u);
+      };
+
+      // 1) Structured JSON islands
+      const islands = [...html.matchAll(
+        /<script[^>]*id=["'](SIGI_STATE|__INITIAL_PROPS__|UNIVERSAL_DATA_FOR_REHYDRATION)["'][^>]*>([\s\S]*?)<\/script>/g
+      )];
+      for (const [, , body] of islands) {
+        let root;
+        try { root = JSON.parse(body); } catch { continue; }
+
+        // Collect every ItemModule-ish dictionary in the tree.
+        const pools = [];
+        const walk = (node) => {
+          if (!node || typeof node !== 'object') return;
+          if (Array.isArray(node)) { node.forEach(walk); return; }
+          for (const [k, v] of Object.entries(node)) {
+            if (/^ItemModule/i.test(k) && v && typeof v === 'object') pools.push(Object.values(v));
+            else walk(v);
+          }
+        };
+        walk(root);
+
+        for (const items of pools) {
+          for (const item of items) {
+            if (!item || typeof item !== 'object') continue;
+            const v = item.video || item;
+            out.title = out.title || item.desc || item.title || '';
+            const a = item.author || item.authorMeta || {};
+            out.author = out.author || a.nickname || (a.uniqueId ? `@${a.uniqueId}` : a.name ? `@${a.name}` : '');
+            out.cover = out.cover || v.cover || v.originCover || null;
+            out.duration = out.duration || Math.round((v.duration || 0) / (v.duration > 1000 ? 1000 : 1)) || 0;
+            out.internalId = out.internalId || v.videoId || null;
+            out.audio = out.audio || (item.music && (item.music.playUrl || item.music.playAddr)) || null;
+            add(v.downloadAddr); add(v.playAddr);
+            for (const b of (v.bitrateInfo || [])) {
+              for (const u of ((b && b.PlayAddr && b.PlayAddr.UrlList) || [])) add(u);
+            }
+          }
+        }
+      }
+
+      // 2) window['videoData'] / loose "playAddr" sweep over the raw HTML
+      for (const [, u] of html.matchAll(/["'](playAddr|downloadAddr|playApi)["']\s*:\s*["'](https?:[^"']+)["']/g)) add(u);
+      if (!out.internalId) {
+        const m = html.match(/["']videoId["']\s*:\s*["'](v[0-9a-z]+)["']/i);
+        if (m) out.internalId = m[1];
+      }
+      if (!out.audio) {
+        const m = html.match(/["']playUrl["']\s*:\s*["'](https?:[^"']+?\.mp3[^"']*)["']/i);
+        if (m) out.audio = unescapeJson(m[1]);
+      }
+
+      // 3) PRIMARY link: TikTok's native play endpoint with watermark=0,
+      //    built from the internal aweme id found in the embed payload.
+      if (out.internalId) out.video = NATIVE_PLAY(out.internalId);
+
+      // 4) Fallback primary: first clean CDN address from the payload.
+      if (!out.video) out.video = out.alts[0] || null;
+
+      return out;
+    }
+
+    /* ═════════════════ Direct resolution pipeline (no proxies) ═════════════════ */
+    async function resolveDirect(cleanUrl, onStatus) {
+      // Step 1 — public oEmbed: metadata + canonical id for short links.
+      onStatus('Contacting TikTok oEmbed…');
+      let meta = null;
+      try {
+        const res = await fetchWithTimeout(OEMBED_URL + encodeURIComponent(cleanUrl));
+        if (res.ok) meta = await res.json();
+      } catch { /* optional — long-form links carry their own id */ }
+
+      let id = idFromPath(cleanUrl);
+      if (!id && meta && typeof meta.html === 'string') {
+        const m = meta.html.match(/embed\/v2\/(\d{6,})|data-video-id=["'](\d{6,})["']/);
+        if (m) id = m[1] || m[2];
+      }
+      if (!id) {
+        throw new Error('NO_ID');
+      }
+
+      // Step 2 — the native embed player page, straight from TikTok.
+      onStatus('Fetching TikTok\u2019s native embed player…');
+      let html = null;
+      for (const url of EMBED_PATHS(id)) {
+        try {
+          const res = await fetchWithTimeout(url);
+          if (!res.ok) continue;
+          const text = await res.text();
+          if (text && /SIGI_STATE|videoData|playAddr|ItemModule/i.test(text)) { html = text; break; }
+        } catch { /* try next embed path */ }
+      }
+      if (!html) throw new Error('EMBED_BLOCKED');
+
+      // Step 3 — extract the un-watermarked CDN links from the payload.
+      const data = parseEmbedPayload(html, meta);
+      if (!data.video) throw new Error('NO_MEDIA');
+      return data;
+    }
+
+    /* ═══════════════════════════ UI orchestration ═══════════════════════════ */
+    let busy = false;
+    let alternates = [];
+    let altIndex = 0;
+
+    const setStatus = (msg) => { els.statusText.textContent = msg; els.loading.classList.remove('hidden'); els.error.classList.add('hidden'); els.statusRow.classList.remove('hidden'); };
+    const setError = (msg) => { els.error.textContent = msg; els.loading.classList.add('hidden'); els.error.classList.remove('hidden'); els.statusRow.classList.remove('hidden'); };
+    const hideStatus = () => els.statusRow.classList.add('hidden');
+
+    function toast(message) {
+      const el = document.createElement('div');
+      el.className = 'toast glass-soft rounded-xl px-4 py-2.5 text-[13px] text-white/90';
+      el.textContent = message;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3200);
+    }
+
+    function chip(text) {
+      if (!text) return;
+      const s = document.createElement('span');
+      s.className = 'rounded-lg bg-white/10 px-2 py-1 text-[11px] font-semibold text-white/70';
+      s.textContent = text;
+      els.chips.appendChild(s);
+    }
+
+    function renderResult(v) {
+      els.title.textContent = v.title || 'TikTok video';
+      els.author.textContent = v.author || '';
+      els.chips.innerHTML = '';
+      chip(v.internalId ? 'Native stream' : 'CDN');
+      chip(fmtDur(v.duration));
+      chip(v.audio ? 'MP3 available' : '');
+
+      els.thumb.innerHTML = '▶';
+      if (v.cover) {
+        const img = document.createElement('img');
+        img.src = v.cover; img.alt = 'Video thumbnail'; img.referrerPolicy = 'no-referrer';
+        img.onerror = () => img.remove();
+        els.thumb.appendChild(img);
+      }
+
+      // Hand the link to the native download manager: <a download _blank rel>.
+      els.btnVideo.href = v.video;
+      els.btnVideo.setAttribute('download', `${safeName(v.title)}.mp4`);
+      els.btnVideo.onclick = () => toast('Video handed to your download manager');
+
+      if (v.audio) {
+        els.btnAudio.style.display = '';
+        els.btnAudio.href = v.audio;
+        els.btnAudio.setAttribute('download', `${safeName(v.title)}.mp3`);
+        els.btnAudio.onclick = () => toast('Audio handed to your download manager');
+      } else {
+        els.btnAudio.style.display = 'none';
+      }
+
+      // Alternate CDN cycler (same payload, different edge URL).
+      alternates = v.alts.filter((u) => u !== v.video);
+      altIndex = 0;
+      if (alternates.length) {
+        els.btnAlt.classList.remove('hidden');
+        els.btnAlt.style.display = 'block'; // explicit: tailwind 'hidden' vs inline-display fight
+        els.btnAlt.href = alternates[0];
+        els.btnAlt.setAttribute('download', `${safeName(v.title)}.mp4`);
+      } else {
+        els.btnAlt.style.display = 'none';
+      }
+
+      els.card.classList.remove('hidden');
+      els.card.classList.add('rise');
+    }
+
+    els.btnAlt.addEventListener('click', () => {
+      if (!alternates.length) return;
+      altIndex = (altIndex + 1) % alternates.length;
+      els.btnAlt.href = alternates[altIndex];
+      toast(`Alternate CDN ${altIndex + 1}/${alternates.length} attached`);
+    });
+
+    async function run() {
+      if (busy) return;
+      const url = extractTikTokUrl(els.input.value);
+      if (!url) {
+        setError('Please paste a valid TikTok video link, e.g. https://www.tiktok.com/@user/video/…');
+        return;
+      }
+      els.input.value = url;
+      els.card.classList.add('hidden');
+      busy = true;
+      els.btn.disabled = true;
+
+      try {
+        const video = await resolveDirect(url, setStatus);
+        renderResult(video);
+        hideStatus();
+        toast('Ready — pick Video or Audio');
+      } catch (err) {
+        const msg = err && err.message;
+        if (msg === 'NO_ID') {
+          setError('Couldn\u2019t determine the video id. For short vm.tiktok.com / vt.tiktok.com links TikTok\u2019s oEmbed must answer the browser — paste the full …/video/<id> link instead.');
+        } else if (msg === 'NO_MEDIA') {
+          setError('TikTok answered, but no playable stream was found in the embed payload (the video may be private, deleted or region-locked).');
+        } else {
+          setError('TikTok\u2019s servers refused the direct browser request (network/CORS). By design no proxies are used — wait a moment and try again, or use the full-length link.');
+        }
+      } finally {
+        busy = false;
+        els.btn.disabled = false;
+      }
+    }
+
+    els.btn.addEventListener('click', run);
+    els.input.addEventListener('keydown', (e) => e.key === 'Enter' && run());
+    els.paste.addEventListener('click', async () => {
+      try {
+        const t = await navigator.clipboard.readText();
+        if (t && t.trim()) els.input.value = t.trim(); else toast('Clipboard is empty');
+      } catch { toast('Clipboard blocked — paste manually'); els.input.focus(); }
+    });
+  })();
+  </script>
+</body>
+</html>

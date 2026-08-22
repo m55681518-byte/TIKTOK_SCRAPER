@@ -1,0 +1,342 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   TikGrab — Cyber-Neon Minimalist
+   Matte black #0A0A0A · Neon Pink #fe2c55 · Bright Cyan #25f4ee
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg: #0A0A0A;
+  --pink: #fe2c55;
+  --cyan: #25f4ee;
+  --text: #f2f3f5;
+  --dim: #8a8f98;
+  --surface: #101012;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Faint cyber grid, masked to the viewport centre */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 42%, #000 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 42%, #000 30%, transparent 75%);
+  pointer-events: none;
+}
+
+::selection { background: rgba(37, 244, 238, 0.35); }
+
+/* ── Ambient neon glows ─────────────────────────────────────────────────── */
+.glow {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(110px);
+  pointer-events: none;
+  z-index: 0;
+  animation: breathe 9s ease-in-out infinite alternate;
+}
+.glow-pink { width: 42vmax; height: 42vmax; top: -16vmax; left: -14vmax;
+  background: radial-gradient(circle, rgba(254, 44, 85, 0.20), transparent 70%); }
+.glow-cyan { width: 40vmax; height: 40vmax; bottom: -16vmax; right: -14vmax;
+  background: radial-gradient(circle, rgba(37, 244, 238, 0.16), transparent 70%);
+  animation-delay: -4.5s; }
+@keyframes breathe { from { opacity: .55; } to { opacity: 1; } }
+
+/* ── Centred stage (flex) ───────────────────────────────────────────────── */
+.stage {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  padding: 32px 18px;
+}
+
+/* ── Logo: split-colour TikTok glitch ───────────────────────────────────── */
+.hero { text-align: center; }
+
+.logo {
+  position: relative;
+  font-family: "Poppins", sans-serif;
+  font-weight: 800;
+  font-size: clamp(2.8rem, 9vw, 4.4rem);
+  letter-spacing: 0.01em;
+  color: var(--text);
+  text-shadow: 0 0 22px rgba(254, 44, 85, 0.35);
+}
+.logo::before,
+.logo::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.logo::before { color: var(--pink); transform: translate(-2.5px, -1px);
+  animation: glitch-a 3.2s infinite steps(1); }
+.logo::after  { color: var(--cyan); transform: translate(2.5px, 1px);
+  animation: glitch-b 3.2s infinite steps(1); }
+@keyframes glitch-a {
+  0%, 88%, 100% { transform: translate(-2.5px, -1px); opacity: .8; }
+  90% { transform: translate(-5px, 2px); opacity: 1; }
+  94% { transform: translate(-1px, -2px); opacity: .9; }
+}
+@keyframes glitch-b {
+  0%, 88%, 100% { transform: translate(2.5px, 1px); opacity: .8; }
+  90% { transform: translate(5px, -2px); opacity: 1; }
+  94% { transform: translate(1px, 2px); opacity: .9; }
+}
+
+.tag {
+  margin-top: 8px;
+  font-size: 12.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* ── Unified pill: input + format + Get ─────────────────────────────────── */
+.pill {
+  width: min(640px, 100%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 7px 7px 20px;
+  border-radius: 999px;
+  background: var(--surface);
+  /* no harsh borders — subtle inner shadow only */
+  box-shadow:
+    inset 0 2px 10px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: box-shadow 0.25s ease;
+}
+.pill:focus-within {
+  box-shadow:
+    inset 0 2px 10px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 1px rgba(37, 244, 238, 0.45),
+    0 0 26px rgba(37, 244, 238, 0.22);
+}
+
+.pill-icon { width: 18px; height: 18px; color: var(--dim); flex: none; }
+
+.pill input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font: 500 14.5px/1 "Inter", sans-serif;
+  padding: 12px 0;
+}
+.pill input::placeholder { color: #5c6068; }
+
+.divider { width: 1px; height: 22px; background: rgba(255, 255, 255, 0.09); flex: none; }
+
+.pill select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2325f4ee' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 4px center;
+  border: none;
+  outline: none;
+  color: var(--cyan);
+  font: 600 13px "Inter", sans-serif;
+  padding: 10px 20px 10px 6px;
+  cursor: pointer;
+  flex: none;
+}
+.pill select option { background: #101012; color: var(--text); }
+
+/* ── The Get button: pink→cyan gradient pill, glow + hover scale ────────── */
+.get-btn {
+  position: relative;
+  flex: none;
+  min-width: 92px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 999px;
+  padding: 14px 26px;
+  cursor: pointer;
+  font: 700 14.5px "Poppins", sans-serif;
+  letter-spacing: 0.04em;
+  color: #060607;
+  background: linear-gradient(90deg, var(--pink) 0%, #b833ae 50%, var(--cyan) 100%);
+  box-shadow:
+    0 0 18px rgba(254, 44, 85, 0.45),
+    0 0 26px rgba(37, 244, 238, 0.28);
+  transition: transform 0.16s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.get-btn:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 26px rgba(254, 44, 85, 0.6),
+    0 0 40px rgba(37, 244, 238, 0.4);
+  filter: brightness(1.07);
+}
+.get-btn:active { transform: scale(0.97); }
+.get-btn:disabled { cursor: default; filter: saturate(0.6) brightness(0.85); }
+
+/* Loading: label swaps to a spinning neon ring */
+.get-btn .ring { display: none; width: 18px; height: 18px; border-radius: 50%;
+  border: 2.5px solid transparent;
+  border-top-color: #060607;
+  border-right-color: rgba(6, 6, 7, 0.35);
+  animation: spin 0.75s linear infinite; }
+.get-btn.loading .label { display: none; }
+.get-btn.loading .ring { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Error line ─────────────────────────────────────────────────────────── */
+.error {
+  max-width: 640px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #ff7d95;
+  text-shadow: 0 0 14px rgba(254, 44, 85, 0.4);
+  text-align: center;
+}
+
+/* ── Frosted "Download Ready" card — slides down ────────────────────────── */
+.ready-card {
+  width: min(640px, 100%);
+  border-radius: 22px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  /* hidden state → animated reveal */
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-16px);
+  padding-top: 0;
+  padding-bottom: 0;
+  border-width: 0;
+  overflow: hidden;
+  transition: max-height 0.55s cubic-bezier(0.2, 0.7, 0.2, 1),
+              opacity 0.45s ease, transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1),
+              padding 0.55s ease, border-width 0.55s ease;
+}
+.ready-card.show {
+  max-height: 460px;
+  opacity: 1;
+  transform: none;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  border-width: 1px;
+}
+
+.ready-head { display: flex; gap: 14px; }
+
+.thumb {
+  flex: none;
+  width: 64px; height: 90px;
+  border-radius: 12px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--dim);
+  font-size: 18px;
+}
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.ready-kicker {
+  font: 700 10.5px "Poppins", sans-serif;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  text-shadow: 0 0 12px rgba(37, 244, 238, 0.5);
+}
+.r-title {
+  margin-top: 4px;
+  font: 600 14.5px/1.4 "Inter", sans-serif;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.r-author { margin-top: 2px; font-size: 12px; color: var(--dim); }
+.r-chips { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.r-chips span {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+.ready-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+@media (max-width: 520px) { .ready-actions { grid-template-columns: 1fr; } }
+
+.act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 13px 16px;
+  font: 700 13px "Poppins", sans-serif;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.act svg { width: 16px; height: 16px; }
+.act:hover { transform: translateY(-2px) scale(1.02); filter: brightness(1.08); }
+.act:active { transform: scale(0.97); }
+
+.act-video {
+  color: #fff;
+  background: linear-gradient(135deg, #ff5c7d, var(--pink) 60%, #c2103d);
+  box-shadow: 0 0 18px rgba(254, 44, 85, 0.45);
+}
+.act-mp3 {
+  color: #04282a;
+  background: linear-gradient(135deg, #9ffbfa, var(--cyan) 60%, #0bb8b0);
+  box-shadow: 0 0 18px rgba(37, 244, 238, 0.4);
+}
+/* the format chosen in the dropdown gets the stronger halo */
+.act.chosen { box-shadow: 0 0 26px rgba(255, 255, 255, 0.18), 0 0 30px currentColor; }
+
+.alt {
+  display: block;
+  margin-top: 12px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--dim);
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+  width: max-content;
+  margin-inline: auto;
+}
+.alt:hover { color: var(--cyan); }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.foot {
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #43474e;
+}

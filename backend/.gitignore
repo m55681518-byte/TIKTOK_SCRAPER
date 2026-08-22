@@ -1,0 +1,9 @@
+# Secrets — NEVER commit the real key
+.env
+.env.local
+.env.*.local
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*

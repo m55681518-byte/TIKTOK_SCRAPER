@@ -1,0 +1,39 @@
+name: tikgrab
+description: "Share a TikTok link, get the video — watermark-free, straight into your gallery."
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Native share-sheet integration (TikTok → Share → TikGrab).
+  receive_sharing_intent: ^1.9.0
+
+  # HTTP client: talks to our Express backend and streams the MP4 with progress.
+  dio: ^5.7.0
+
+  # Temp-directory resolution and path joining.
+  path_provider: ^2.1.4
+  path: ^1.9.0
+
+  # Saves the finished MP4 into iOS Photos / the Android gallery.
+  # Maintained drop-in successor of the abandoned `gallery_saver` package
+  # (identical `GallerySaver.saveVideo` API) that still builds on AGP 8+.
+  gallery_saver_plus: ^3.2.9
+
+  # Runtime permission request for legacy Android storage (API <= 28).
+  permission_handler: ^11.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

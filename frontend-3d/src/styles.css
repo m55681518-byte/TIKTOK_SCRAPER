@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TikGrab 3D — global styles on top of Tailwind
+   Deep-space background, frosted glass, physical 3D buttons.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --pink: #fe2c55;
+  --pink-deep: #7a0d24;
+  --cyan: #25f4ee;
+  --cyan-deep: #0b6f6a;
+  --space: #05050a;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: #f5f5f7;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  background:
+    radial-gradient(1200px 700px at 85% -10%, rgba(254, 44, 85, 0.14), transparent 60%),
+    radial-gradient(1000px 650px at 8% 110%, rgba(37, 244, 238, 0.12), transparent 60%),
+    var(--space);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(37, 244, 238, 0.35);
+}
+
+/* ── Frosted glass surfaces ─────────────────────────────────────────────── */
+.glass {
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.10),
+    rgba(255, 255, 255, 0.04) 42%,
+    rgba(255, 255, 255, 0.07)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow:
+    0 30px 70px -20px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.glass-tile {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 18px 45px -18px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.glass-tile:hover {
+  border-color: rgba(37, 244, 238, 0.35);
+  box-shadow:
+    0 26px 60px -18px rgba(0, 0, 0, 0.8),
+    0 0 32px -6px rgba(37, 244, 238, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+/* ── Physical 3D pill buttons ───────────────────────────────────────────── */
+.btn-3d {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff5c7d 0%, var(--pink) 45%, #d91a43 100%);
+  box-shadow:
+    0 7px 0 0 var(--pink-deep),
+    0 20px 45px -10px rgba(254, 44, 85, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.2s ease;
+  transform: translateY(0);
+}
+.btn-3d:hover {
+  filter: brightness(1.09);
+}
+.btn-3d:active {
+  /* physically pushed into the Z axis */
+  transform: translateY(7px) scale(0.985);
+  box-shadow:
+    0 0 0 0 var(--pink-deep),
+    0 8px 24px -8px rgba(254, 44, 85, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.btn-3d:disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.btn-3d-cyan {
+  background: linear-gradient(135deg, #8efcf8 0%, var(--cyan) 45%, #0ec9c1 100%);
+  color: #04282a;
+  box-shadow:
+    0 7px 0 0 var(--cyan-deep),
+    0 20px 45px -10px rgba(37, 244, 238, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.btn-3d-cyan:active {
+  box-shadow:
+    0 0 0 0 var(--cyan-deep),
+    0 8px 24px -8px rgba(37, 244, 238, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* ── Neon input ─────────────────────────────────────────────────────────── */
+.neon-input {
+  background: rgba(0, 0, 0, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.neon-input:focus-within {
+  border-color: rgba(37, 244, 238, 0.6);
+  box-shadow: 0 0 0 3px rgba(37, 244, 238, 0.15), 0 0 26px -4px rgba(37, 244, 238, 0.35);
+}
+
+/* ── Gradient headline ──────────────────────────────────────────────────── */
+.grad-text {
+  background: linear-gradient(92deg, #fff 20%, var(--cyan) 48%, var(--pink) 82%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 24px rgba(37, 244, 238, 0.25));
+}
+
+/* ── Spinner ────────────────────────────────────────────────────────────── */
+.spinner-3d {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid rgba(37, 244, 238, 0.2);
+  border-top-color: var(--cyan);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Soft dynamic shadow under the floating hero card */
+.card-shadow {
+  background: radial-gradient(50% 50% at 50% 50%, rgba(0, 0, 0, 0.65), transparent 70%);
+  filter: blur(18px);
+}

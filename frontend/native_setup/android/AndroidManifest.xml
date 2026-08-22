@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ═══════════════════════════════════════════════════════════════════════════
+  TikGrab — reference AndroidManifest.xml
+  ═══════════════════════════════════════════════════════════════════════════
+  After scaffolding the platform folders (`flutter create .` inside
+  frontend/), replace  android/app/src/main/AndroidManifest.xml  with this
+  file (adjust android:label / icon to your app).
+
+  What each block does:
+    • INTERNET                     → talk to the backend + stream the MP4.
+    • WRITE/READ_EXTERNAL_STORAGE  → legacy gallery saving on Android ≤ 9
+                                     only (capped via maxSdkVersion). Android
+                                     10+ uses MediaStore → no permission.
+    • usesCleartextTraffic         → ONLY for dev against an http:// backend.
+                                     Remove it for HTTPS-only production.
+    • SEND intent-filter           → puts TikGrab in TikTok's share sheet.
+    • VIEW intent-filter           → optional: open tiktok.com links in-app.
+    • launchMode="singleTask"      → reuse the activity for incoming intents
+                                     instead of stacking new instances.
+  ═══════════════════════════════════════════════════════════════════════════
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Network access for the Express backend and the video CDN. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+      Storage permissions for gallery saving:
+        • Android 10+ (API 29+): gallery_saver_plus writes via MediaStore —
+          NO permission is required.
+        • Android 9 and below: WRITE_EXTERNAL_STORAGE is still needed.
+          maxSdkVersion keeps modern devices from ever seeing it.
+          permission_handler requests it at runtime before saving.
+    -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <application
+        android:name="${applicationName}"
+        android:label="TikGrab"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
+
+            <!-- Launcher -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- ═══════════ SHARE SHEET INTEGRATION ═══════════
+                 Makes "TikGrab" appear when the user taps Share in TikTok.
+                 TikTok shares the video link as text/plain. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <!-- ═══════════ OPTIONAL DEEP LINKS ═══════════
+                 Also lets the app open tiktok.com links directly. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="tiktok.com" />
+                <data android:scheme="https" android:host="www.tiktok.com" />
+                <data android:scheme="https" android:host="m.tiktok.com" />
+                <data android:scheme="https" android:host="vm.tiktok.com" />
+                <data android:scheme="https" android:host="vt.tiktok.com" />
+            </intent-filter>
+        </activity>
+
+        <!-- Don't delete: required by the Flutter tooling. -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+</manifest>

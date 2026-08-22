@@ -1,0 +1,12 @@
+
+# secret-bearing bundles must never be tracked
+tiktok-downloader-pwa.zip
+
+# secrets & secret-bearing bundles never tracked
+.env
+.env.*
+tiktok-downloader-pwa.zip
+node_modules/
+.vercel/
+frontend-3d/dist/
+frontend-3d/node_modules/

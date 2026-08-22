@@ -1,0 +1,10 @@
+# Secrets — NEVER commit the real key
+.env
+.env.local
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Vercel link metadata
+.vercel/

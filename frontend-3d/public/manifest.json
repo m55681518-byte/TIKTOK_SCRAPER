@@ -1,0 +1,27 @@
+{
+  "name": "TikGrab — TikTok Video Saver",
+  "short_name": "TikGrab",
+  "description": "Save TikTok videos watermark-free. Share a link straight from TikTok, or paste it — get the MP4 in seconds.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#05050a",
+  "background_color": "#05050a",
+  "categories": ["utilities", "video", "entertainment"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
